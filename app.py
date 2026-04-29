@@ -1,4 +1,3 @@
-import streamlit as st
 import requests
 import pandas as pd
 
@@ -8,7 +7,12 @@ from lstm_model import train_lstm, predict_next, load_saved_model
 # =========================
 # CONFIG
 # =========================
-API_URL = "http://127.0.0.1:8000/demand"
+import os
+
+API_URL = os.getenv(
+    "API_URL",
+    "http://127.0.0.1:8000/demand"
+)
 API_KEY = "free-user-key"
 
 st.set_page_config(page_title="SmartGridAI", layout="wide")

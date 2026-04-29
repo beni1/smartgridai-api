@@ -1,27 +1,21 @@
 import numpy as np
 
-def generate_demand(n_points=200):
-    np.random.seed(42)
+def generate_demand(days=1):
+    hours = np.arange(1, 24 * days + 1)
 
-    time = np.arange(1, n_points + 1)
+    # Smooth daily cycle
+    daily_cycle = 120 + 30 * np.sin(2 * np.pi * (hours - 6) / 24)
 
-    # Simulated temperature pattern (daily cycle + randomness)
-    temperature = 28 + 5 * np.sin(time / 15) + np.random.normal(0, 1, 
-n_points)
+    # Evening peak
+    evening_boost = 40 * np.exp(-0.5 * ((hours % 24 - 19) / 3) ** 2)
 
-    # Base consumption trend
-    base = 100 + (time * 0.3)
+    # Noise
+    noise = np.random.normal(0, 8, len(hours))
 
-    # Demand influenced by temperature (hotter → more usage)
-    demand = base + (temperature * 2)
-
-    # Add random fluctuations (grid instability simulation)
-    noise = np.random.normal(0, 5, n_points)
-
-    consumption = demand + noise
+    consumption = daily_cycle + evening_boost + noise
+    consumption = np.maximum(consumption, 0)
 
     return {
-        "time": time.tolist(),
-        "temperature": temperature.tolist(),
-        "consumption": consumption.tolist()
+        "time": hours.tolist(),
+        "consumption": consumption.astype(int).tolist()
     }

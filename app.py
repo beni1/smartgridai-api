@@ -1,30 +1,140 @@
 import streamlit as st
 import requests
+import pandas as pd
 
+# ✅ UPDATED IMPORT
+from lstm_model import train_lstm, predict_next, load_saved_model
+
+# =========================
+# CONFIG
+# =========================
 API_URL = "http://127.0.0.1:8000/demand"
-API_KEY = "smartgrid-secret-key"
+API_KEY = "free-user-key"
 
 st.set_page_config(page_title="SmartGridAI", layout="wide")
-st.title("⚡ SmartGridAI Dashboard (API Mode)")
+st.title("⚡ SmartGridAI - Energy Demand Dashboard")
 
+# ✅ AUTO-LOAD SAVED MODEL
+if "model" not in st.session_state:
+    model, scaler = load_saved_model()
+    if model is not None:
+        st.session_state["model"] = model
+        st.session_state["scaler"] = scaler
+        st.success("✅ Loaded saved AI model!")
+
+# =========================
+# SIDEBAR
+# =========================
+st.sidebar.header("Controls")
+days = st.sidebar.slider("Select number of days", 1, 7, 1)
+
+# =========================
+# MAIN ACTION (API)
+# =========================
 if st.button("Generate Demand Data"):
-    try:
-        response = requests.get(
-            API_URL,
-            headers={"x-api-key": API_KEY}
-        )
+    with st.spinner("Fetching data from API..."):
+        try:
+            response = requests.get(
+                API_URL,
+                params={"days": days},
+                headers={"x-api-key": API_KEY}
+            )
 
-        if response.status_code == 200:
             data = response.json()
 
-            st.subheader("Energy Consumption")
-            st.line_chart(data["consumption"])
+            if "data" not in data:
+                st.error(f"API Error: {data}")
+            else:
+                time = data["data"]["time"]
+                consumption = data["data"]["consumption"]
 
-            st.subheader("Temperature")
-            st.line_chart(data["temperature"])
+                df = pd.DataFrame({
+                    "Time": time,
+                    "Consumption": consumption
+                })
 
+                # ✅ ADD TEMPERATURE FEATURE
+                df["Temperature"] = 25 + (df.index % 10)
+
+                # ✅ Store for reuse
+                st.session_state["df"] = df
+
+                # =========================
+                # DISPLAY
+                # =========================
+                st.subheader("📈 Demand Curve")
+                st.line_chart(df.set_index("Time"))
+
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Plan", data["plan"])
+                col2.metric("Used", data["used"])
+                col3.metric("Limit", data["limit"])
+
+                st.subheader("📋 Raw Data")
+                st.dataframe(df)
+
+        except Exception as e:
+            st.error(f"Connection error: {e}")
+
+# =========================
+# 🤖 AI PREDICTION (LSTM)
+# =========================
+st.subheader("🤖 AI Prediction (LSTM)")
+
+# ✅ IMPROVED TRAIN BUTTON
+if st.button("Train AI Model"):
+    if "df" in st.session_state:
+
+        if "model" in st.session_state:
+            st.info("Model already loaded. Skipping training.")
         else:
-            st.error("Unauthorized or API error")
+            df = st.session_state["df"]
 
-    except Exception as e:
-        st.error(f"Connection failed: {e}")
+            # ✅ Show dataset size
+            st.info(f"Training on {len(df)} data points...")
+
+            # ✅ Progress UI
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            from tensorflow.keras.callbacks import Callback
+
+            class StreamlitCallback(Callback):
+                def on_epoch_end(self, epoch, logs=None):
+                    total_epochs = self.params["epochs"]
+                    progress = (epoch + 1) / total_epochs
+                    progress_bar.progress(progress)
+                    status_text.text(f"Epoch {epoch+1}/{total_epochs} completed")
+
+            with st.spinner("Training AI model..."):
+                model, scaler, epochs = train_lstm(
+                    df,
+                    callback=StreamlitCallback()
+                )
+
+            st.session_state["model"] = model
+            st.session_state["scaler"] = scaler
+
+            progress_bar.progress(1.0)
+            status_text.text("Training complete!")
+
+            st.success("Model trained and saved!")
+
+    else:
+        st.warning("Generate data first!")
+
+
+# ✅ PREDICTION BUTTON (UNCHANGED)
+if st.button("Predict Next Demand"):
+    if "model" in st.session_state and "df" in st.session_state:
+
+        prediction = predict_next(
+            st.session_state["model"],
+            st.session_state["df"],
+            st.session_state["scaler"]
+        )
+
+        st.metric("Next Demand Prediction", round(prediction, 2))
+
+    else:
+        st.warning("Train model first!")

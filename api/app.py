@@ -4,6 +4,17 @@ import pandas as pd
 app = FastAPI()
 
 # =========================
+# ✅ ROOT ENDPOINT (NEW)
+# =========================
+@app.get("/")
+def root():
+    return {
+        "message": "SmartGridAI API is running",
+        "endpoint": "/demand",
+        "status": "OK"
+    }
+
+# =========================
 # SIMPLE DEMAND API
 # =========================
 @app.get("/demand")
@@ -22,7 +33,7 @@ def get_demand(days: int = 1, x_api_key: str = Header(None)):
     consumption = [100 + i * 10 for i in range(days)]
 
     # =========================
-    # 🚨 ANOMALY DETECTION (NEW)
+    # 🚨 ANOMALY DETECTION
     # =========================
     anomaly_detected = False
     anomaly_reason = "No anomaly"
@@ -30,13 +41,11 @@ def get_demand(days: int = 1, x_api_key: str = Header(None)):
     for i in range(1, len(consumption)):
         change = consumption[i] - consumption[i - 1]
 
-        # Detect sudden spike
         if change > 15:
             anomaly_detected = True
             anomaly_reason = "Sudden demand spike detected"
             break
 
-    # Detect instability (fallback check)
     if not anomaly_detected:
         variance = max(consumption) - min(consumption)
         if variance > 40:
@@ -44,12 +53,11 @@ def get_demand(days: int = 1, x_api_key: str = Header(None)):
             anomaly_reason = "High demand fluctuation detected"
 
     # =========================
-    # 🔥 SMART ALERT LOGIC (UPDATED)
+    # 🔥 SMART ALERT LOGIC
     # =========================
     peak = max(consumption)
     avg = sum(consumption) / len(consumption)
 
-    # 🚨 ANOMALY OVERRIDE (VERY IMPORTANT)
     if anomaly_detected:
         alert = "CRITICAL"
         peak_risk = "UNSTABLE"
@@ -60,8 +68,7 @@ def get_demand(days: int = 1, x_api_key: str = Header(None)):
         alert = "HIGH"
         peak_risk = "CRITICAL"
         cost_impact = "VERY HIGH COST"
-        recommendation = "Reduce load immediately or activate backup 
-supply"
+        recommendation = "Reduce load immediately or activate backup supply"
 
     elif peak > 115:
         alert = "MEDIUM"
@@ -76,7 +83,7 @@ supply"
         recommendation = "Normal operation"
 
     # =========================
-    # 💰 COST MODEL (IMPROVED)
+    # 💰 COST MODEL
     # =========================
     estimated_cost = round(sum(consumption) * 0.11, 2)
 
@@ -93,7 +100,7 @@ supply"
         savings_tip = "System already optimized"
 
     # =========================
-    # 🚀 FINAL RESPONSE (UPDATED)
+    # 🚀 FINAL RESPONSE
     # =========================
     return {
         "data": {

@@ -22,42 +22,47 @@ def get_demand(days: int = 1, x_api_key: str = Header(None)):
     consumption = [100 + i * 10 for i in range(days)]
 
     # =========================
-    # 🔹 STEP 1 — VALUE LAYER
+    # 🔥 SMART ALERT LOGIC (UPDATED)
     # =========================
-    max_demand = max(consumption)
-    avg_demand = sum(consumption) / len(consumption)
+    peak = max(consumption)
+    avg = sum(consumption) / len(consumption)
 
-    if max_demand > 130:
-        peak_risk = "HIGH"
-        recommendation = "Shift usage away from peak hours (6–8pm)"
-        cost_impact = "INCREASED COST RISK"
+    # 🔴 Dynamic thresholds
+    if peak > 130:
+        alert = "HIGH"
+        peak_risk = "CRITICAL"
+        cost_impact = "VERY HIGH COST"
+        recommendation = "Reduce load immediately or activate backup supply"
+
+    elif peak > 115:
+        alert = "MEDIUM"
+        peak_risk = "ELEVATED"
+        cost_impact = "HIGH COST"
+        recommendation = "Shift non-essential load to off-peak hours"
+
     else:
-        peak_risk = "LOW"
+        alert = "LOW"
+        peak_risk = "STABLE"
+        cost_impact = "NORMAL COST"
         recommendation = "Normal operation"
-        cost_impact = "STABLE COST"
 
     # =========================
-    # 🔹 STEP 2 — ALERT LAYER
+    # 💰 COST MODEL (IMPROVED)
     # =========================
-    alert = "NORMAL"
-
-    if max_demand > 140:
-        alert = "⚠ CRITICAL: Overload risk"
-    elif max_demand > 130:
-        alert = "⚠ WARNING: High demand detected"
+    estimated_cost = round(sum(consumption) * 0.11, 2)
 
     # =========================
-    # 🔹 STEP 3 — COST SAVINGS LAYER
+    # 💡 SAVINGS LOGIC
     # =========================
-    estimated_cost = round(sum(consumption) * 0.12, 2)
-
-    savings_tip = "No optimization needed"
-
-    if peak_risk == "HIGH":
-        savings_tip = "Shift load to off-peak hours → save 8–15% cost"
+    if alert == "HIGH":
+        savings_tip = "Immediate load reduction can save up to 20%"
+    elif alert == "MEDIUM":
+        savings_tip = "Load shifting can reduce cost by ~10%"
+    else:
+        savings_tip = "System already optimized"
 
     # =========================
-    # 🚀 STEP 4 — FINAL RESPONSE
+    # 🚀 FINAL RESPONSE (UPDATED)
     # =========================
     return {
         "data": {

@@ -1,14 +1,14 @@
+import streamlit as st
 import requests
 import pandas as pd
+import os
 
-# ✅ UPDATED IMPORT
+# ✅ LSTM IMPORTS
 from lstm_model import train_lstm, predict_next, load_saved_model
 
 # =========================
 # CONFIG
 # =========================
-import os
-
 API_URL = os.getenv(
     "API_URL",
     "http://127.0.0.1:8000/demand"
@@ -18,7 +18,9 @@ API_KEY = "free-user-key"
 st.set_page_config(page_title="SmartGridAI", layout="wide")
 st.title("⚡ SmartGridAI - Energy Demand Dashboard")
 
-# ✅ AUTO-LOAD SAVED MODEL
+# =========================
+# LOAD MODEL
+# =========================
 if "model" not in st.session_state:
     model, scaler = load_saved_model()
     if model is not None:
@@ -33,7 +35,7 @@ st.sidebar.header("Controls")
 days = st.sidebar.slider("Select number of days", 1, 7, 1)
 
 # =========================
-# MAIN ACTION (API)
+# FETCH DATA FROM API
 # =========================
 if st.button("Generate Demand Data"):
     with st.spinner("Fetching data from API..."):
@@ -57,14 +59,13 @@ if st.button("Generate Demand Data"):
                     "Consumption": consumption
                 })
 
-                # ✅ ADD TEMPERATURE FEATURE
+                # ✅ Add temperature feature
                 df["Temperature"] = 25 + (df.index % 10)
 
-                # ✅ Store for reuse
                 st.session_state["df"] = df
 
                 # =========================
-                # DISPLAY
+                # DISPLAY CHART
                 # =========================
                 st.subheader("📈 Demand Curve")
                 st.line_chart(df.set_index("Time"))
@@ -77,6 +78,21 @@ if st.button("Generate Demand Data"):
                 st.subheader("📋 Raw Data")
                 st.dataframe(df)
 
+                # =========================
+                # 💰 MONETIZATION DISPLAY (NEW)
+                # =========================
+                if "insights" in data:
+                    st.subheader("💡 Energy Intelligence Insights")
+
+                    insights = data["insights"]
+
+                    st.write("🚨 Alert:", insights["alert"])
+                    st.write("⚡ Peak Risk:", insights["peak_risk"])
+                    st.write("💰 Cost Impact:", insights["cost_impact"])
+                    st.write("📌 Recommendation:", insights["recommendation"])
+                    st.write("💸 Estimated Cost:", insights["estimated_cost"])
+                    st.write("📉 Savings Tip:", insights["savings_tip"])
+
         except Exception as e:
             st.error(f"Connection error: {e}")
 
@@ -85,7 +101,6 @@ if st.button("Generate Demand Data"):
 # =========================
 st.subheader("🤖 AI Prediction (LSTM)")
 
-# ✅ IMPROVED TRAIN BUTTON
 if st.button("Train AI Model"):
     if "df" in st.session_state:
 
@@ -94,10 +109,8 @@ if st.button("Train AI Model"):
         else:
             df = st.session_state["df"]
 
-            # ✅ Show dataset size
             st.info(f"Training on {len(df)} data points...")
 
-            # ✅ Progress UI
             progress_bar = st.progress(0)
             status_text = st.empty()
 
@@ -127,8 +140,9 @@ if st.button("Train AI Model"):
     else:
         st.warning("Generate data first!")
 
-
-# ✅ PREDICTION BUTTON (UNCHANGED)
+# =========================
+# 🔮 PREDICTION
+# =========================
 if st.button("Predict Next Demand"):
     if "model" in st.session_state and "df" in st.session_state:
 

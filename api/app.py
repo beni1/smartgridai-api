@@ -22,17 +22,46 @@ def get_demand(days: int = 1, x_api_key: str = Header(None)):
     consumption = [100 + i * 10 for i in range(days)]
 
     # =========================
+    # 🚨 ANOMALY DETECTION (NEW)
+    # =========================
+    anomaly_detected = False
+    anomaly_reason = "No anomaly"
+
+    for i in range(1, len(consumption)):
+        change = consumption[i] - consumption[i - 1]
+
+        # Detect sudden spike
+        if change > 15:
+            anomaly_detected = True
+            anomaly_reason = "Sudden demand spike detected"
+            break
+
+    # Detect instability (fallback check)
+    if not anomaly_detected:
+        variance = max(consumption) - min(consumption)
+        if variance > 40:
+            anomaly_detected = True
+            anomaly_reason = "High demand fluctuation detected"
+
+    # =========================
     # 🔥 SMART ALERT LOGIC (UPDATED)
     # =========================
     peak = max(consumption)
     avg = sum(consumption) / len(consumption)
 
-    # 🔴 Dynamic thresholds
-    if peak > 130:
+    # 🚨 ANOMALY OVERRIDE (VERY IMPORTANT)
+    if anomaly_detected:
+        alert = "CRITICAL"
+        peak_risk = "UNSTABLE"
+        cost_impact = "EXTREME COST RISK"
+        recommendation = "Investigate abnormal demand pattern immediately"
+
+    elif peak > 130:
         alert = "HIGH"
         peak_risk = "CRITICAL"
         cost_impact = "VERY HIGH COST"
-        recommendation = "Reduce load immediately or activate backup supply"
+        recommendation = "Reduce load immediately or activate backup 
+supply"
 
     elif peak > 115:
         alert = "MEDIUM"
@@ -54,7 +83,9 @@ def get_demand(days: int = 1, x_api_key: str = Header(None)):
     # =========================
     # 💡 SAVINGS LOGIC
     # =========================
-    if alert == "HIGH":
+    if alert == "CRITICAL":
+        savings_tip = "Immediate intervention required to prevent failure"
+    elif alert == "HIGH":
         savings_tip = "Immediate load reduction can save up to 20%"
     elif alert == "MEDIUM":
         savings_tip = "Load shifting can reduce cost by ~10%"
@@ -75,7 +106,9 @@ def get_demand(days: int = 1, x_api_key: str = Header(None)):
             "cost_impact": cost_impact,
             "recommendation": recommendation,
             "estimated_cost": estimated_cost,
-            "savings_tip": savings_tip
+            "savings_tip": savings_tip,
+            "anomaly_detected": anomaly_detected,
+            "anomaly_reason": anomaly_reason
         },
         "plan": "free",
         "used": days,

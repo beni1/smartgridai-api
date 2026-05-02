@@ -11,10 +11,15 @@ load_dotenv()
 # =========================
 from api.auth import verify_api_key
 from api.usage import check_limit
-from api.insights import generate_insights
 
-# ✅ LSTM IMPORTS
-from lstm_model import load_saved_model, predict_next
+# =========================
+# LSTM IMPORTS
+# =========================
+from lstm_model import (
+    load_saved_model,
+    predict_next,
+    load_dataset
+)
 
 # =========================
 # CREATE FASTAPI APP
@@ -26,7 +31,7 @@ app = FastAPI(
 # =========================
 # LOAD MODEL ON STARTUP
 # =========================
-model = load_saved_model()
+model, scaler = load_saved_model()
 
 # =========================
 # ROOT ENDPOINT
@@ -65,24 +70,29 @@ def get_demand(
         }
 
     # =========================
+    # LOAD DATAFRAME
+    # =========================
+    df = load_dataset()
+
+    # =========================
     # GENERATE LSTM FORECAST
     # =========================
     values = []
-
-    current_value = 100
 
     for _ in range(days):
 
         prediction = predict_next(
             model,
-            current_value
+            df,
+            scaler
         )
 
-        prediction = round(float(prediction), 2)
+        prediction = round(
+            float(prediction),
+            2
+        )
 
         values.append(prediction)
-
-        current_value = prediction
 
     # =========================
     # BUILD RESPONSE DATA
@@ -96,19 +106,13 @@ def get_demand(
     }
 
     # =========================
-    # GENERATE AI INSIGHTS
-    # =========================
-    insights = generate_insights(values)
-
-    # =========================
     # FINAL RESPONSE
     # =========================
     return {
         "plan": plan,
         "used": used,
         "limit": limit,
-        "data": data,
-        "insights": insights
+        "data": data
     }
 
 # =========================
@@ -122,6 +126,9 @@ def forecast(
 
     api_key, plan = auth
 
+    # =========================
+    # CHECK USAGE LIMITS
+    # =========================
     allowed, used, limit = check_limit(
         api_key,
         plan
@@ -136,29 +143,37 @@ def forecast(
         }
 
     # =========================
+    # LOAD DATAFRAME
+    # =========================
+    df = load_dataset()
+
+    # =========================
     # AI FORECAST GENERATION
     # =========================
     forecast_values = []
-
-    current_value = 100
 
     for _ in range(days):
 
         prediction = predict_next(
             model,
-            current_value
+            df,
+            scaler
         )
 
-        prediction = round(float(prediction), 2)
+        prediction = round(
+            float(prediction),
+            2
+        )
 
         forecast_values.append(prediction)
-
-        current_value = prediction
 
     # =========================
     # SIMPLE RISK ANALYSIS
     # =========================
-    avg_forecast = sum(forecast_values) / len(forecast_values)
+    avg_forecast = (
+        sum(forecast_values)
+        / len(forecast_values)
+    )
 
     if avg_forecast > 150:
         risk = "HIGH"

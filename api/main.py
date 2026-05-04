@@ -1,3 +1,18 @@
+# =========================
+# INTERNAL MODULES
+# =========================
+from api.auth import verify_api_key
+from api.usage import check_limit
+
+# =========================
+# LSTM IMPORTS
+# =========================
+from lstm_model import (
+    load_saved_model,
+    predict_next_days,
+    load_dataset
+)
+
 from fastapi import FastAPI, Depends
 from dotenv import load_dotenv
 
@@ -17,7 +32,7 @@ from api.usage import check_limit
 # =========================
 from lstm_model import (
     load_saved_model,
-    predict_next,
+    predict_next_days,
     load_dataset
 )
 
@@ -74,25 +89,6 @@ def get_demand(
     # =========================
     df = load_dataset()
 
-    # =========================
-    # GENERATE LSTM FORECAST
-    # =========================
-    values = []
-
-    for _ in range(days):
-
-        prediction = predict_next(
-            model,
-            df,
-            scaler
-        )
-
-        prediction = round(
-            float(prediction),
-            2
-        )
-
-        values.append(prediction)
 
     # =========================
     # BUILD RESPONSE DATA
@@ -114,6 +110,7 @@ def get_demand(
         "limit": limit,
         "data": data
     }
+
 
 # =========================
 # FORECAST ENDPOINT
@@ -148,24 +145,14 @@ def forecast(
     df = load_dataset()
 
     # =========================
-    # AI FORECAST GENERATION
+    # RECURSIVE AI FORECAST
     # =========================
-    forecast_values = []
-
-    for _ in range(days):
-
-        prediction = predict_next(
-            model,
-            df,
-            scaler
-        )
-
-        prediction = round(
-            float(prediction),
-            2
-        )
-
-        forecast_values.append(prediction)
+    forecast_values = predict_next_days(
+        model,
+        df,
+        scaler,
+        days=days
+    )
 
     # =========================
     # SIMPLE RISK ANALYSIS

@@ -208,13 +208,114 @@ def train_lstm(
     return model, scaler, epochs
 
 # =========================
-# PREDICT NEXT VALUE
+# MULTI-STEP FORECASTING
 # =========================
-def predict_next(
+def predict_next_days(
     model,
     df,
-    scaler
+    scaler,
+    days=5
 ):
+
+    # -------------------------
+    # Extract latest features
+    # -------------------------
+    features = df[
+        ["Time", "Temperature", "Consumption"]
+    ].values
+
+    # -------------------------
+    # Take last window
+    # -------------------------
+    last_window = features[-WINDOW_SIZE:]
+
+    # Scale window
+    scaled_window = scaler.transform(
+        last_window
+    )
+
+    predictions = []
+
+    # -------------------------
+    # Recursive forecasting loop
+    # -------------------------
+    for i in range(days):
+
+        # Reshape for LSTM
+        input_window = scaled_window.reshape(
+            (1, WINDOW_SIZE, 3)
+        )
+
+        # Predict next consumption
+        pred_scaled = model.predict(
+            input_window,
+            verbose=0
+        )
+
+        predicted_consumption_scaled = pred_scaled[0][0]
+
+        # -------------------------
+        # Generate next synthetic features
+        # -------------------------
+
+        # Next time value
+        next_time = last_window[-1][0] + 1
+
+        # Slight temperature variation
+        next_temp = (
+            last_window[-1][1]
+            + np.random.uniform(-1, 1)
+        )
+
+        # Create new scaled row
+        new_row = np.array([
+            next_time,
+            next_temp,
+            0
+        ]).reshape(1, -1)
+
+        # Scale new row
+        scaled_new_row = scaler.transform(
+            new_row
+        )
+
+        # Insert predicted consumption
+        scaled_new_row[0][2] = (
+            predicted_consumption_scaled
+        )
+
+        # -------------------------
+        # Inverse transform prediction
+        # -------------------------
+        dummy = np.zeros((1, 3))
+
+        dummy[0][0] = scaled_new_row[0][0]
+        dummy[0][1] = scaled_new_row[0][1]
+        dummy[0][2] = predicted_consumption_scaled
+
+        prediction_actual = scaler.inverse_transform(
+            dummy
+        )[0][2]
+
+        predictions.append(
+            round(float(prediction_actual), 2)
+        )
+
+        # -------------------------
+        # Update recursive window
+        # -------------------------
+        scaled_window = np.vstack([
+            scaled_window[1:],
+            scaled_new_row
+        ])
+
+        # Update actual last_window too
+        last_window = np.vstack([
+            last_window[1:],
+            [next_time, next_temp, prediction_actual]
+        ])
+
+    return predictions
 
     features = df[
         ["Time", "Temperature", "Consumption"]

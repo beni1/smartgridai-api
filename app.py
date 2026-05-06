@@ -88,11 +88,16 @@ if st.button("Generate Forecast"):
             # =========================
             # DATA EXTRACTION
             # =========================
-            data = result.get("data", {})
+            forecast_values = result.get("forecast", [])
+
             insights = result.get("insights", {})
 
-            time_data = data.get("time", [])
-            consumption_data = data.get("consumption", [])
+            time_data = [
+                f"Day {i+1}"
+                for i in range(len(forecast_values))
+                ]
+
+            consumption_data = forecast_values
 
             # =========================
             # DATAFRAME

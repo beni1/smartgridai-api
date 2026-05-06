@@ -3,9 +3,17 @@ import os
 import joblib
 import pandas as pd
 
+from database import SessionLocal, engine
+from models import Base, ModelTraining
+
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import LSTM, Dense
 from sklearn.preprocessing import MinMaxScaler
+
+# =========================
+# CREATE DATABASE TABLES
+# =========================
+Base.metadata.create_all(bind=engine)
 
 # =========================
 # GLOBAL CONSTANT
@@ -193,7 +201,10 @@ def train_lstm(
         f"epochs={epochs}, batch={batch_size}"
     )
 
-    model.fit(
+    # =========================
+    # TRAIN MODEL
+    # =========================
+    history = model.fit(
         X,
         y,
         epochs=epochs,
@@ -202,7 +213,27 @@ def train_lstm(
         callbacks=callbacks
     )
 
-    # Save model after training
+    # =========================
+    # SAVE TRAINING METRICS
+    # =========================
+    db = SessionLocal()
+
+    final_loss = history.history["loss"][-1]
+
+    training_log = ModelTraining(
+        epochs=epochs,
+        loss=float(final_loss)
+    )
+
+    db.add(training_log)
+
+    db.commit()
+
+    db.close()
+
+    # =========================
+    # SAVE MODEL
+    # =========================
     save_model(model, scaler)
 
     return model, scaler, epochs
@@ -355,7 +386,6 @@ if __name__ == "__main__":
     df = load_dataset()
 
     print(df.head())
-
     print("Training LSTM model...")
 
     model, scaler, epochs = train_lstm(df)

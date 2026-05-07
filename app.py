@@ -177,6 +177,21 @@ if st.button("Generate Forecast"):
                     st.success(f"✅ ALERT: {alert}")
 
                 # =========================
+                # AI ANOMALY ALERTS
+                # =========================
+                if response.get("anomaly_detected"):
+
+                    st.error(
+                        f"⚠️ {response.get('anomaly_reason')}"
+                    )
+
+               else:
+
+                    st.success(
+                        "✅ No anomaly detected"
+                    )
+
+                # =========================
                 # RECOMMENDATION
                 # =========================
                 st.markdown("### 🧠 Recommended Action")

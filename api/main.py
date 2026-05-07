@@ -196,6 +196,23 @@ def forecast(
         risk = "LOW"
 
     # =========================
+    # AI ANOMALY DETECTION
+    # =========================
+    max_forecast = max(forecast_values)
+
+    anomaly_detected = False
+
+    anomaly_reason = "No anomaly detected"
+
+    if max_forecast > 350:
+
+        anomaly_detected = True
+
+        anomaly_reason = (
+            "Extreme demand spike detected"
+        )
+
+    # =========================
     # OPEN DATABASE SESSION
     # =========================
     db = SessionLocal()
@@ -245,7 +262,13 @@ def forecast(
         "confidence": "92%",
         "plan": plan,
         "used": used,
-        "limit": limit
+        "limit": limit,
+
+        # =========================
+        # ANOMALY RESPONSE
+        # =========================
+        "anomaly_detected": anomaly_detected,
+        "anomaly_reason": anomaly_reason
     }
 
 # =========================

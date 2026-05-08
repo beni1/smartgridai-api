@@ -116,12 +116,15 @@ def get_demand(
     )
 
     if avg_consumption > 150:
+
         risk_level = "HIGH"
 
     elif avg_consumption > 120:
+
         risk_level = "MEDIUM"
 
     else:
+
         risk_level = "LOW"
 
     # =========================
@@ -187,12 +190,15 @@ def forecast(
     )
 
     if avg_forecast > 150:
+
         risk = "HIGH"
 
     elif avg_forecast > 120:
+
         risk = "MEDIUM"
 
     else:
+
         risk = "LOW"
 
     # =========================
@@ -201,7 +207,7 @@ def forecast(
     average_forecast = (
         sum(forecast_values)
         / len(forecast_values)
-        )
+    )
 
     threshold = average_forecast * 1.35
 
@@ -218,6 +224,19 @@ def forecast(
         anomaly_reason = (
             "Extreme demand spike detected"
         )
+
+    # =========================
+    # ANOMALY SEVERITY ENGINE
+    # =========================
+    anomaly_severity = "LOW"
+
+    if max_forecast > threshold * 1.5:
+
+        anomaly_severity = "HIGH"
+
+    elif max_forecast > threshold * 1.2:
+
+        anomaly_severity = "MEDIUM"
 
     # =========================
     # OPEN DATABASE SESSION
@@ -264,18 +283,27 @@ def forecast(
     # RESPONSE
     # =========================
     return {
+
         "forecast": forecast_values,
+
         "risk": risk,
+
         "confidence": "92%",
+
         "plan": plan,
+
         "used": used,
+
         "limit": limit,
 
         # =========================
         # ANOMALY RESPONSE
         # =========================
         "anomaly_detected": anomaly_detected,
-        "anomaly_reason": anomaly_reason
+
+        "anomaly_reason": anomaly_reason,
+
+        "anomaly_severity": anomaly_severity
     }
 
 # =========================

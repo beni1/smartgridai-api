@@ -20,6 +20,7 @@ st.set_page_config(
 )
 
 st.title("⚡ SmartGridAI-Nigeria")
+
 st.caption(
     "AI-Powered Smart Grid Monitoring & Energy Forecasting"
 )
@@ -145,7 +146,10 @@ if st.button("Generate Forecast"):
             # =========================
             # RISK DISPLAY
             # =========================
-            risk = result.get("risk", "LOW")
+            risk = result.get(
+                "risk",
+                "LOW"
+            )
 
             st.subheader("🚨 Forecast Risk")
 
@@ -185,6 +189,32 @@ if st.button("Generate Forecast"):
 
                 st.success(
                     "✅ No anomaly detected"
+                )
+
+            # =========================
+            # ANOMALY SEVERITY
+            # =========================
+            severity = result.get(
+                "anomaly_severity",
+                "LOW"
+            )
+
+            if severity == "HIGH":
+
+                st.error(
+                    "🚨 HIGH anomaly severity"
+                )
+
+            elif severity == "MEDIUM":
+
+                st.warning(
+                    "⚠️ MEDIUM anomaly severity"
+                )
+
+            else:
+
+                st.success(
+                    "✅ LOW anomaly severity"
                 )
 
             # =========================

@@ -196,15 +196,22 @@ def forecast(
         risk = "LOW"
 
     # =========================
-    # AI ANOMALY DETECTION
+    # AI ANOMALY DETECTION (DYNAMIC)
     # =========================
+    average_forecast = (
+        sum(forecast_values)
+        / len(forecast_values)
+        )
+
+    threshold = average_forecast * 1.35
+
     max_forecast = max(forecast_values)
 
     anomaly_detected = False
 
     anomaly_reason = "No anomaly detected"
 
-    if max_forecast > 350:
+    if max_forecast > threshold:
 
         anomaly_detected = True
 
